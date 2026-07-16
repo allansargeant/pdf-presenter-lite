@@ -1,0 +1,31 @@
+appId: com.allansargeant.pdf-presenter-lite
+productName: PDF Presenter Lite
+directories:
+  buildResources: build
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+win:
+  executableName: pdf-presenter-lite
+  target:
+    - portable
+portable:
+  artifactName: ${name}-${version}-portable.${ext}
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.productivity
+dmg:
+  artifactName: ${name}-${version}.${ext}
+linux:
+  target:
+    - deb
+    - rpm
+  maintainer: allansargeant
+  category: Office
+npmRebuild: false
