@@ -9,6 +9,12 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  # pdfjs-dist's optional Node-canvas fallback — we only render via the
+  # browser's DOM <canvas> in the renderer, never Node-side. Its prebuilt
+  # native binary is arch-specific but only ever installed for whichever
+  # arch this repo's npm install ran on, so it ends up byte-identical in
+  # both x64 and arm64 packaged trees and breaks the universal-binary merge.
+  - '!**/node_modules/@napi-rs/**'
 win:
   executableName: pdf-presenter-lite
   target:
@@ -24,10 +30,12 @@ mac:
       arch:
         - x64
         - arm64
+        - universal
     - target: zip
       arch:
         - x64
         - arm64
+        - universal
   category: public.app-category.productivity
 dmg:
   artifactName: ${name}-${version}-${arch}.${ext}

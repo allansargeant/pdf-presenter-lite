@@ -21,15 +21,21 @@ pattern.
 
 Prebuilt binaries are on the
 [Releases page](https://github.com/allansargeant/pdf-presenter-lite/releases/latest),
-covering both x64 and ARM64 on every platform:
+covering both x64 and ARM64 on every platform — plus a combined "works on
+either architecture" option for macOS and Windows if you'd rather not think
+about which to pick:
 
-- **macOS:** Apple Silicon or Intel, `.dmg` or `.zip` — unsigned, so Gatekeeper
-  will block it on first launch. Right-click the app → Open, or run
+- **macOS:** Universal (.dmg / .zip, runs on both Apple Silicon and Intel —
+  recommended if unsure), or Apple Silicon-only / Intel-only for a smaller,
+  single-architecture download. Unsigned, so Gatekeeper will block it on
+  first launch. Right-click the app → Open, or run
   `xattr -cr "PDF Presenter Lite.app"` after extracting.
-- **Windows:** x64 or ARM64, a portable `.exe` — no installer, just run it
-  directly. Unsigned, so SmartScreen will likely warn on first run ("More
-  info" → "Run anyway").
-- **Linux:** x64 or ARM64, as `.deb` (Debian/Ubuntu) or `.rpm`
+- **Windows:** a combined portable `.exe` covering both x64 and ARM64
+  (recommended if unsure), or an x64-only / ARM64-only build for a smaller
+  download. No installer either way, just run it directly. Unsigned, so
+  SmartScreen will likely warn on first run ("More info" → "Run anyway").
+- **Linux:** x64 or ARM64 (no combined option — `.deb`/`.rpm` packages are
+  inherently single-architecture), as `.deb` (Debian/Ubuntu) or `.rpm`
   (Fedora/RHEL/openSUSE).
 
 ## What it does
