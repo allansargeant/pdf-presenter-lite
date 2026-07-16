@@ -17,6 +17,19 @@ pattern.
 
 ![Fullscreen Output window showing just the current slide](docs/output-screenshot.png)
 
+## Download
+
+Prebuilt binaries are on the
+[Releases page](https://github.com/allansargeant/pdf-presenter-lite/releases/latest):
+
+- **macOS (Apple Silicon):** `.dmg` or `.zip` — unsigned, so Gatekeeper will
+  block it on first launch. Right-click the app → Open, or run
+  `xattr -cr "PDF Presenter Lite.app"` after extracting.
+- **Windows (x64):** a portable `.exe` — no installer, just run it directly.
+  Unsigned, so SmartScreen will likely warn on first run ("More info" →
+  "Run anyway").
+- **Linux (x64):** `.deb` (Debian/Ubuntu) or `.rpm` (Fedora/RHEL/openSUSE).
+
 ## What it does
 
 - **Open a PDF** — renders locally with pdf.js, no other slide-source integrations
