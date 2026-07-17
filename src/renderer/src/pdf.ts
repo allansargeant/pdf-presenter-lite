@@ -103,3 +103,69 @@ export async function renderPageContain(
   const scale = Math.min(maxWidth / unscaledViewport.width, maxHeight / unscaledViewport.height)
   await renderAtScale(doc, pageNumber, canvas, scale)
 }
+
+export interface PageLink {
+  /** Position/size as a percentage of the page's own box — scale-invariant,
+   * so these line up with the rendered canvas regardless of how large it's
+   * currently displayed. */
+  xPct: number
+  yPct: number
+  widthPct: number
+  heightPct: number
+  /** 1-indexed, matching the rest of this app's page numbering. */
+  targetPage: number
+}
+
+export interface PageLinksResult {
+  /** Page width / height, for sizing a same-aspect-ratio overlay container. */
+  aspectRatio: number
+  links: PageLink[]
+}
+
+/**
+ * Internal "jump to page" links authored into the PDF (e.g. a table of
+ * contents, or "back to agenda" links exported from PowerPoint/Keynote/Google
+ * Slides). Only resolves links that point at another page in this same
+ * document — external URLs and other action types are skipped. Rects come
+ * back through the page's own viewport at scale 1, so `xPct`/`yPct`/etc. are
+ * plain percentages of the page box, independent of render scale or page
+ * rotation (`convertToViewportRectangle` accounts for rotation).
+ */
+export async function getPageLinks(
+  doc: PDFDocumentProxy,
+  pageNumber: number
+): Promise<PageLinksResult> {
+  const page = await doc.getPage(pageNumber)
+  const viewport = page.getViewport({ scale: 1 })
+  const annotations = await page.getAnnotations({ intent: 'display' })
+
+  const links: PageLink[] = []
+  for (const annotation of annotations) {
+    if (annotation.subtype !== 'Link' || !annotation.dest) continue
+    try {
+      const destArray =
+        typeof annotation.dest === 'string'
+          ? await doc.getDestination(annotation.dest)
+          : annotation.dest
+      if (!Array.isArray(destArray) || !destArray[0]) continue
+
+      const targetPage = (await doc.getPageIndex(destArray[0])) + 1
+      const [vx1, vy1, vx2, vy2] = viewport.convertToViewportRectangle(annotation.rect)
+      const x = Math.min(vx1, vx2)
+      const y = Math.min(vy1, vy2)
+
+      links.push({
+        xPct: (x / viewport.width) * 100,
+        yPct: (y / viewport.height) * 100,
+        widthPct: (Math.abs(vx2 - vx1) / viewport.width) * 100,
+        heightPct: (Math.abs(vy2 - vy1) / viewport.height) * 100,
+        targetPage
+      })
+    } catch {
+      // Malformed or unsupported destination (e.g. an embedded-file target)
+      // — skip this link rather than failing the whole page.
+    }
+  }
+
+  return { aspectRatio: viewport.width / viewport.height, links }
+}

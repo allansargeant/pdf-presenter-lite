@@ -65,7 +65,12 @@ function App(): React.JSX.Element {
 
       {doc ? (
         <>
-          <NowNext doc={doc} currentPage={currentPage} totalPages={totalPages} />
+          <NowNext
+            doc={doc}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onNavigate={setCurrentPage}
+          />
           <div className="page-indicator">
             {currentPage} / {totalPages}
           </div>

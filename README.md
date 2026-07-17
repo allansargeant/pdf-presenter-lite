@@ -45,6 +45,13 @@ about which to pick:
   strip of thumbnails for every slide below them; click any thumbnail to jump
   straight to that slide
 - **Keyboard navigation** — Left/Right arrows (or Space to advance)
+- **Internal PDF link navigation** — links authored into the PDF itself (a
+  table of contents, "back to agenda" links exported from PowerPoint/Keynote/
+  Google Slides) become clickable on the "Now" slide, jumping straight to
+  their target page. Reads link annotations via pdf.js, resolving each
+  destination to a page number regardless of whether it's a named or explicit
+  destination; only internal same-document links are wired up, external URLs
+  are left alone
 - **Fullscreen Output window** — a second, chrome-free window showing just the
   current slide, for a projector or confidence monitor. Pick which connected
   display it opens on from a dropdown next to the toggle button
