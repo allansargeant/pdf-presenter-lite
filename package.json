@@ -1,6 +1,6 @@
 {
   "name": "pdf-presenter-lite",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Minimal PDF presenter: presenter view (now/next + clickable slide thumbnails) on one screen, fullscreen output on another.",
   "main": "./out/main/index.js",
   "author": "Allan Sargeant",
