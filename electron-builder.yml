@@ -25,6 +25,14 @@ win:
 portable:
   artifactName: ${name}-${version}-${arch}-portable.${ext}
 mac:
+  # Standalone (non-universal) arm64/x64 builds otherwise ship completely
+  # unsigned, which Gatekeeper on Apple Silicon refuses to launch at all
+  # ("is damaged and can't be opened") — the universal build only worked
+  # because @electron/universal's lipo merge step happens to leave it
+  # validly ad-hoc-signed. identity: null forces electron-builder to
+  # ad-hoc sign every target explicitly instead of skipping signing when
+  # no Developer ID certificate is installed.
+  identity: '-'
   target:
     - target: dmg
       arch:

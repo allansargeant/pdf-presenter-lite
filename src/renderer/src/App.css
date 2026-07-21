@@ -36,7 +36,17 @@
 
 .output-control {
   display: flex;
+  align-items: center;
   gap: 6px;
+}
+
+.output-hide-cursor {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
 }
 
 .output-display-select {
@@ -162,13 +172,32 @@
   font-size: 13px;
 }
 
-.page-indicator {
+.slide-slot-canvas--clickable {
+  cursor: pointer;
+}
+
+.slide-slot-canvas--clickable:hover {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.transport {
   flex-shrink: 0;
-  text-align: center;
-  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px;
+  background: var(--bg-1);
+  border-top: 1px solid var(--border);
+}
+
+.transport-indicator {
   font-family: var(--font-mono);
-  font-size: 12px;
   color: var(--text-2);
+  font-size: 13px;
+  min-width: 70px;
+  text-align: center;
 }
 
 .thumbnail-strip {
@@ -250,4 +279,8 @@
   color: var(--text-3);
   font-family: var(--font-mono);
   font-size: 16px;
+}
+
+.output-shell--no-cursor {
+  cursor: none;
 }

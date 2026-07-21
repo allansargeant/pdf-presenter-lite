@@ -11,13 +11,15 @@ export interface DisplayInfo {
 
 interface Props {
   disabled: boolean
+  hideCursor: boolean
+  onHideCursorChange: (value: boolean) => void
 }
 
 function preferredDisplay(list: DisplayInfo[]): DisplayInfo | undefined {
   return list.find((d) => !d.primary) ?? list[0]
 }
 
-function OutputControl({ disabled }: Props): React.JSX.Element {
+function OutputControl({ disabled, hideCursor, onHideCursorChange }: Props): React.JSX.Element {
   const [displays, setDisplays] = useState<DisplayInfo[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [open, setOpen] = useState(false)
@@ -70,6 +72,14 @@ function OutputControl({ disabled }: Props): React.JSX.Element {
       >
         {open ? 'Close Output' : 'Start Output'}
       </button>
+      <label className="output-hide-cursor">
+        <input
+          type="checkbox"
+          checked={hideCursor}
+          onChange={(e) => onHideCursorChange(e.target.checked)}
+        />
+        Hide cursor
+      </label>
     </div>
   )
 }

@@ -28,15 +28,27 @@ function Output(): React.JSX.Element {
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!doc || !canvas || !state) return
+    if (!doc || !canvas || !state || state.screenBlank !== 'none') return
     renderPageContain(doc, state.currentPage, canvas, window.innerWidth, window.innerHeight).catch(
       (err) => console.error('Failed to render output page', err)
     )
   }, [doc, state])
 
+  const blank = state?.screenBlank ?? 'none'
+
   return (
-    <div className="output-shell">
-      {doc && state ? <canvas ref={canvasRef} /> : <div className="output-empty">No signal</div>}
+    <div
+      className={`output-shell${state?.hideCursor ? ' output-shell--no-cursor' : ''}`}
+      style={
+        blank === 'black'
+          ? { background: '#000' }
+          : blank === 'white'
+            ? { background: '#fff' }
+            : undefined
+      }
+    >
+      {blank === 'none' &&
+        (doc && state ? <canvas ref={canvasRef} /> : <div className="output-empty">No signal</div>)}
     </div>
   )
 }

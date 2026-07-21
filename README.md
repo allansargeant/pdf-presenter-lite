@@ -44,7 +44,10 @@ about which to pick:
 - **Presenter view** — a "Now" and "Next" preview side by side, plus a horizontal
   strip of thumbnails for every slide below them; click any thumbnail to jump
   straight to that slide
-- **Keyboard navigation** — Left/Right arrows (or Space to advance)
+- **Keyboard navigation** — Left/Right, Up/Down, and Page Up/Page Down all
+  move a slide; Space also advances
+- **Mouse navigation** — a Previous/Next transport bar below the thumbnail
+  strip, and clicking the "Next" preview itself jumps straight to it
 - **Internal PDF link navigation** — links authored into the PDF itself (a
   table of contents, "back to agenda" links exported from PowerPoint/Keynote/
   Google Slides) become clickable on the "Now" slide, jumping straight to
@@ -55,6 +58,12 @@ about which to pick:
 - **Fullscreen Output window** — a second, chrome-free window showing just the
   current slide, for a projector or confidence monitor. Pick which connected
   display it opens on from a dropdown next to the toggle button
+- **Screen blanking** — press `B` or `W` to cut the Output window to solid
+  black or white without losing your place, mirroring PowerPoint's presenter
+  shortcuts; press again to restore the slide
+- **Hide cursor on Output** — an optional checkbox that hides the OS mouse
+  cursor whenever it's over the Output window, for a clean audience-facing
+  display
 
 ## Architecture
 
