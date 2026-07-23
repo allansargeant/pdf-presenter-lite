@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { OutputState } from '../shared/output'
+import type { OscArg, OscAction, OscConfig } from '../shared/osc'
 
 interface OpenPdfResult {
   filePath: string
@@ -48,6 +49,30 @@ const api = {
       ipcRenderer.on('output:state', listener)
       return (): void => {
         ipcRenderer.removeListener('output:state', listener)
+      }
+    }
+  },
+  osc: {
+    start: (): Promise<void> => ipcRenderer.invoke('osc:start'),
+    stop: (): Promise<void> => ipcRenderer.invoke('osc:stop'),
+    isRunning: (): Promise<boolean> => ipcRenderer.invoke('osc:is-running'),
+    getConfig: (): Promise<OscConfig> => ipcRenderer.invoke('osc:get-config'),
+    setConfig: (next: Partial<OscConfig>): Promise<OscConfig> =>
+      ipcRenderer.invoke('osc:set-config', next),
+    send: (address: string, args: OscArg[]): Promise<void> =>
+      ipcRenderer.invoke('osc:send', address, args),
+    onAction: (callback: (action: OscAction) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, action: OscAction): void => callback(action)
+      ipcRenderer.on('osc:action', listener)
+      return (): void => {
+        ipcRenderer.removeListener('osc:action', listener)
+      }
+    },
+    onStatusChanged: (callback: (running: boolean) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, running: boolean): void => callback(running)
+      ipcRenderer.on('osc:status-changed', listener)
+      return (): void => {
+        ipcRenderer.removeListener('osc:status-changed', listener)
       }
     }
   }

@@ -6,6 +6,9 @@ import NowNext from './components/NowNext'
 import Thumbnail from './components/Thumbnail'
 import OutputControl from './components/OutputControl'
 import Transport from './components/Transport'
+import OscControl from './components/OscControl'
+import { handleOscAction, allFeedback } from './osc/oscpoint'
+import type { OscSnapshot } from './osc/oscpoint'
 
 function App(): React.JSX.Element {
   const [fileName, setFileName] = useState<string | null>(null)
@@ -16,6 +19,18 @@ function App(): React.JSX.Element {
   const [outputOpen, setOutputOpen] = useState(false)
   const [screenBlank, setScreenBlank] = useState<ScreenBlank>('none')
   const [hideCursor, setHideCursor] = useState(false)
+  const [oscRunning, setOscRunning] = useState(false)
+  const [oscActionsEnabled, setOscActionsEnabled] = useState(true)
+  const [oscFeedbacksEnabled, setOscFeedbacksEnabled] = useState(true)
+  const oscSnapshotRef = useRef<OscSnapshot>({
+    currentPage: 1,
+    totalPages: 0,
+    fileName: null,
+    screenBlank: 'none',
+    outputOpen: false,
+    actionsEnabled: true,
+    feedbacksEnabled: true
+  })
 
   const totalPagesRef = useRef(0)
   useEffect(() => {
@@ -32,6 +47,57 @@ function App(): React.JSX.Element {
     if (!outputOpen || !pdfData) return
     window.api.output.pushState({ data: pdfData, currentPage, screenBlank, hideCursor })
   }, [outputOpen, pdfData, currentPage, screenBlank, hideCursor])
+
+  useEffect(() => {
+    window.api.osc.isRunning().then(setOscRunning)
+    return window.api.osc.onStatusChanged(setOscRunning)
+  }, [])
+
+  // Keeps a ref-mirrored snapshot of everything the OSC action dispatcher
+  // and feedback builders need, and reactively resends feedback whenever
+  // any of it changes.
+  useEffect(() => {
+    const snapshot: OscSnapshot = {
+      currentPage,
+      totalPages,
+      fileName,
+      screenBlank,
+      outputOpen,
+      actionsEnabled: oscActionsEnabled,
+      feedbacksEnabled: oscFeedbacksEnabled
+    }
+    oscSnapshotRef.current = snapshot
+    if (oscRunning && oscFeedbacksEnabled) {
+      allFeedback(snapshot).forEach((m) => window.api.osc.send(m.address, m.args))
+    }
+  }, [
+    currentPage,
+    totalPages,
+    fileName,
+    screenBlank,
+    outputOpen,
+    oscActionsEnabled,
+    oscFeedbacksEnabled,
+    oscRunning
+  ])
+
+  useEffect(() => {
+    return window.api.osc.onAction((action) => {
+      handleOscAction(action, oscSnapshotRef.current, {
+        goToPage: (page) => setCurrentPage(page),
+        nextPage: () => setCurrentPage((p) => Math.min(p + 1, totalPagesRef.current || p)),
+        previousPage: () => setCurrentPage((p) => Math.max(p - 1, 1)),
+        setScreenBlank: (next) => setScreenBlank(next),
+        openOutput: () => window.api.output.open(),
+        closeOutput: () => window.api.output.close(),
+        setActionsEnabled: setOscActionsEnabled,
+        setFeedbacksEnabled: setOscFeedbacksEnabled,
+        refreshFeedback: () => {
+          allFeedback(oscSnapshotRef.current).forEach((m) => window.api.osc.send(m.address, m.args))
+        }
+      })
+    })
+  }, [])
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent): void => {
@@ -82,6 +148,7 @@ function App(): React.JSX.Element {
             hideCursor={hideCursor}
             onHideCursorChange={setHideCursor}
           />
+          <OscControl />
           <button className="transport-btn" onClick={openPdf}>
             {fileName ? 'Open Different PDF…' : 'Open PDF…'}
           </button>

@@ -3,6 +3,8 @@ import { join } from 'path'
 import { readFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import type { OutputState } from '../shared/output'
+import { oscControlServer } from './services/oscControlServer'
+import type { OscArg, OscConfig } from '../shared/osc'
 
 interface DisplayInfo {
   id: number
@@ -146,6 +148,14 @@ app.whenReady().then(() => {
     mainWindow.webContents.send('output:displays-changed', listDisplays())
   )
 
+  oscControlServer.on('action', (action) => mainWindow.webContents.send('osc:action', action))
+  oscControlServer.on('status-changed', (running: boolean) =>
+    mainWindow.webContents.send('osc:status-changed', running)
+  )
+  oscControlServer.loadConfig().then((config) => {
+    if (config.autoStart) oscControlServer.start()
+  })
+
   ipcMain.handle('pdf:open', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
@@ -173,11 +183,23 @@ app.whenReady().then(() => {
     outputWindow?.webContents.send('output:state', state)
   })
 
+  ipcMain.handle('osc:start', () => oscControlServer.start())
+  ipcMain.handle('osc:stop', () => oscControlServer.stop())
+  ipcMain.handle('osc:is-running', () => oscControlServer.isRunning())
+  ipcMain.handle('osc:get-config', () => oscControlServer.getConfig())
+  ipcMain.handle('osc:set-config', (_e, next: Partial<OscConfig>) =>
+    oscControlServer.setConfig(next)
+  )
+  ipcMain.handle('osc:send', (_e, address: string, args: OscArg[]) =>
+    oscControlServer.send(address, args)
+  )
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
 app.on('window-all-closed', () => {
+  oscControlServer.shutdown()
   if (process.platform !== 'darwin') app.quit()
 })
