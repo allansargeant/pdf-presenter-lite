@@ -5,6 +5,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import type { OutputState } from '../shared/output'
 import { oscControlServer } from './services/oscControlServer'
 import type { OscArg, OscConfig } from '../shared/osc'
+import { fileControl } from './services/fileControl'
 
 interface DisplayInfo {
   id: number
@@ -155,6 +156,7 @@ app.whenReady().then(() => {
   oscControlServer.loadConfig().then((config) => {
     if (config.autoStart) oscControlServer.start()
   })
+  fileControl.loadConfig()
 
   ipcMain.handle('pdf:open', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -166,6 +168,21 @@ app.whenReady().then(() => {
     const data = await readFile(filePath)
     return { filePath, data: data.toString('base64') }
   })
+
+  ipcMain.handle('files:get-config', () => fileControl.getConfig())
+  ipcMain.handle('files:set-enabled', (_e, enabled: boolean) => fileControl.setEnabled(enabled))
+  ipcMain.handle('files:set-folder-relative', (_e, relativePath: string) =>
+    fileControl.setFolderPathRelativeToHome(relativePath)
+  )
+  ipcMain.handle('files:choose-folder', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory']
+    })
+    if (result.canceled || !result.filePaths[0]) return fileControl.getConfig()
+    return fileControl.setFolderPath(result.filePaths[0])
+  })
+  ipcMain.handle('files:list', () => fileControl.listFiles())
+  ipcMain.handle('files:open', (_e, filename: string) => fileControl.openFile(filename))
 
   ipcMain.handle('output:list-displays', () => listDisplays())
   ipcMain.handle('output:open', (_e, displayId?: number) => openOutput(mainWindow, displayId))

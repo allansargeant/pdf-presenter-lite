@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { OutputState } from '../shared/output'
 import type { OscArg, OscAction, OscConfig } from '../shared/osc'
+import type { FileControlConfig } from '../shared/files'
 
 interface OpenPdfResult {
   filePath: string
@@ -75,6 +76,17 @@ const api = {
         ipcRenderer.removeListener('osc:status-changed', listener)
       }
     }
+  },
+  files: {
+    getConfig: (): Promise<FileControlConfig> => ipcRenderer.invoke('files:get-config'),
+    setEnabled: (enabled: boolean): Promise<FileControlConfig> =>
+      ipcRenderer.invoke('files:set-enabled', enabled),
+    setFolderRelative: (relativePath: string): Promise<FileControlConfig> =>
+      ipcRenderer.invoke('files:set-folder-relative', relativePath),
+    chooseFolder: (): Promise<FileControlConfig> => ipcRenderer.invoke('files:choose-folder'),
+    list: (): Promise<string[]> => ipcRenderer.invoke('files:list'),
+    open: (filename: string): Promise<OpenPdfResult | null> =>
+      ipcRenderer.invoke('files:open', filename)
   }
 }
 

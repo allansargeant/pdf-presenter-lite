@@ -18,6 +18,9 @@ export interface OscSnapshot {
   outputOpen: boolean
   actionsEnabled: boolean
   feedbacksEnabled: boolean
+  filesEnabled: boolean
+  filesFolderRelative: string | null
+  filesFolderFullPath: string | null
 }
 
 export interface OscHandlers {
@@ -35,6 +38,11 @@ export interface OscHandlers {
    * regardless of the feedbacksEnabled flag, since it's an explicit,
    * deliberate request. */
   refreshFeedback(): void
+  /** All three are no-ops when filesEnabled is false — checked by the
+   * dispatcher before calling any of these, not by the handlers themselves. */
+  setFilesPath(relativeToHome: string): void
+  requestFilesList(): void
+  openFileByName(filename: string): void
 }
 
 function argInt(value: number): OscArg {
@@ -57,6 +65,23 @@ function argToBoolean(arg: OscArg | undefined): boolean | undefined {
   if (n !== undefined) return n !== 0
   if (arg?.type === 'true') return true
   if (arg?.type === 'false') return false
+  return undefined
+}
+
+function argBool(value: boolean): OscArg {
+  return value ? { type: 'true', value: true } : { type: 'false', value: false }
+}
+
+/** OSCPoint's own convention: string args can arrive as ASCII (`string`
+ * type) or UTF-8 (`blob` type) — accept either. */
+function argToString(arg: OscArg | undefined): string | undefined {
+  if (!arg) return undefined
+  if (arg.type === 'string' || arg.type === 'symbol' || arg.type === 'character') return arg.value
+  if (arg.type === 'blob') {
+    return new TextDecoder('utf-8').decode(
+      new Uint8Array(arg.value.buffer, arg.value.byteOffset, arg.value.byteLength)
+    )
+  }
   return undefined
 }
 
@@ -107,8 +132,20 @@ export function slideFeedback(s: OscSnapshot): OscMessage[] {
   ]
 }
 
+/** Builds the /oscpoint/v2/files/* feedback messages. */
+export function filesFeedback(s: OscSnapshot): OscMessage[] {
+  return [
+    { address: '/oscpoint/v2/files/enabled', args: [argBool(s.filesEnabled)] },
+    { address: '/oscpoint/v2/files/activefolder', args: [argStr(s.filesFolderRelative ?? '')] },
+    {
+      address: '/oscpoint/v2/files/activefolder/fullpath',
+      args: [argStr(s.filesFolderFullPath ?? '')]
+    }
+  ]
+}
+
 export function allFeedback(s: OscSnapshot): OscMessage[] {
-  return [...presentationFeedback(s), ...slideFeedback(s)]
+  return [...presentationFeedback(s), ...slideFeedback(s), ...filesFeedback(s)]
 }
 
 /**
@@ -184,6 +221,24 @@ export function handleOscAction(
     case '/oscpoint/slideshow/white':
       handlers.setScreenBlank(resolveBlankToggle(args[0], 'white', snapshot.screenBlank))
       return
+    case '/oscpoint/files/setpath': {
+      if (!snapshot.filesEnabled) return
+      const path = argToString(args[0])
+      if (path === undefined) return
+      handlers.setFilesPath(path)
+      return
+    }
+    case '/oscpoint/files/list':
+      if (!snapshot.filesEnabled) return
+      handlers.requestFilesList()
+      return
+    case '/oscpoint/files/open': {
+      if (!snapshot.filesEnabled) return
+      const filename = argToString(args[0])
+      if (filename === undefined) return
+      handlers.openFileByName(filename)
+      return
+    }
     default:
       return
   }

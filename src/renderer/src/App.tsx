@@ -22,6 +22,9 @@ function App(): React.JSX.Element {
   const [oscRunning, setOscRunning] = useState(false)
   const [oscActionsEnabled, setOscActionsEnabled] = useState(true)
   const [oscFeedbacksEnabled, setOscFeedbacksEnabled] = useState(true)
+  const [filesEnabled, setFilesEnabled] = useState(false)
+  const [filesFolderRelative, setFilesFolderRelative] = useState<string | null>(null)
+  const [filesFolderFullPath, setFilesFolderFullPath] = useState<string | null>(null)
   const oscSnapshotRef = useRef<OscSnapshot>({
     currentPage: 1,
     totalPages: 0,
@@ -29,7 +32,10 @@ function App(): React.JSX.Element {
     screenBlank: 'none',
     outputOpen: false,
     actionsEnabled: true,
-    feedbacksEnabled: true
+    feedbacksEnabled: true,
+    filesEnabled: false,
+    filesFolderRelative: null,
+    filesFolderFullPath: null
   })
 
   const totalPagesRef = useRef(0)
@@ -53,6 +59,14 @@ function App(): React.JSX.Element {
     return window.api.osc.onStatusChanged(setOscRunning)
   }, [])
 
+  useEffect(() => {
+    window.api.files.getConfig().then((config) => {
+      setFilesEnabled(config.enabled)
+      setFilesFolderRelative(config.relativeToHome)
+      setFilesFolderFullPath(config.folderPath)
+    })
+  }, [])
+
   // Keeps a ref-mirrored snapshot of everything the OSC action dispatcher
   // and feedback builders need, and reactively resends feedback whenever
   // any of it changes.
@@ -64,7 +78,10 @@ function App(): React.JSX.Element {
       screenBlank,
       outputOpen,
       actionsEnabled: oscActionsEnabled,
-      feedbacksEnabled: oscFeedbacksEnabled
+      feedbacksEnabled: oscFeedbacksEnabled,
+      filesEnabled,
+      filesFolderRelative,
+      filesFolderFullPath
     }
     oscSnapshotRef.current = snapshot
     if (oscRunning && oscFeedbacksEnabled) {
@@ -78,8 +95,20 @@ function App(): React.JSX.Element {
     outputOpen,
     oscActionsEnabled,
     oscFeedbacksEnabled,
+    filesEnabled,
+    filesFolderRelative,
+    filesFolderFullPath,
     oscRunning
   ])
+
+  const applyPdfResult = async (result: { filePath: string; data: string }): Promise<void> => {
+    const loaded = await loadPdf(result.data)
+    setFileName(result.filePath.split('/').pop() ?? result.filePath)
+    setPdfData(result.data)
+    setDoc(loaded)
+    setTotalPages(loaded.numPages)
+    setCurrentPage(1)
+  }
 
   useEffect(() => {
     return window.api.osc.onAction((action) => {
@@ -94,6 +123,24 @@ function App(): React.JSX.Element {
         setFeedbacksEnabled: setOscFeedbacksEnabled,
         refreshFeedback: () => {
           allFeedback(oscSnapshotRef.current).forEach((m) => window.api.osc.send(m.address, m.args))
+        },
+        setFilesPath: (relativeToHome) => {
+          window.api.files.setFolderRelative(relativeToHome).then((config) => {
+            setFilesFolderRelative(config.relativeToHome)
+            setFilesFolderFullPath(config.folderPath)
+          })
+        },
+        requestFilesList: () => {
+          window.api.files.list().then((files) => {
+            window.api.osc.send('/oscpoint/v2/files', [
+              { type: 'string', value: JSON.stringify(files) }
+            ])
+          })
+        },
+        openFileByName: (filename) => {
+          window.api.files.open(filename).then((result) => {
+            if (result) applyPdfResult(result)
+          })
         }
       })
     })
@@ -130,12 +177,7 @@ function App(): React.JSX.Element {
   const openPdf = async (): Promise<void> => {
     const result = await window.api.pdf.open()
     if (!result) return
-    const loaded = await loadPdf(result.data)
-    setFileName(result.filePath.split('/').pop() ?? result.filePath)
-    setPdfData(result.data)
-    setDoc(loaded)
-    setTotalPages(loaded.numPages)
-    setCurrentPage(1)
+    await applyPdfResult(result)
   }
 
   return (
@@ -148,7 +190,20 @@ function App(): React.JSX.Element {
             hideCursor={hideCursor}
             onHideCursorChange={setHideCursor}
           />
-          <OscControl />
+          <OscControl
+            filesEnabled={filesEnabled}
+            filesFolderFullPath={filesFolderFullPath}
+            onFilesEnabledChange={(enabled) => {
+              setFilesEnabled(enabled)
+              window.api.files.setEnabled(enabled)
+            }}
+            onChooseFilesFolder={() => {
+              window.api.files.chooseFolder().then((config) => {
+                setFilesFolderRelative(config.relativeToHome)
+                setFilesFolderFullPath(config.folderPath)
+              })
+            }}
+          />
           <button className="transport-btn" onClick={openPdf}>
             {fileName ? 'Open Different PDF…' : 'Open PDF…'}
           </button>

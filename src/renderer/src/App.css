@@ -112,6 +112,19 @@
   font-size: 10.5px;
   line-height: 1.4;
   color: var(--text-3);
+  word-break: break-all;
+}
+
+.osc-settings-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2px 0;
+}
+
+.osc-settings label.osc-settings-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
 }
 
 .output-display-select {

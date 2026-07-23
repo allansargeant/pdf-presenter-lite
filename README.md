@@ -64,6 +64,15 @@ about which to pick:
 - **Hide cursor on Output** — an optional checkbox that hides the OS mouse
   cursor whenever it's over the Output window, for a clean audience-facing
   display
+- **OSC control** — implements the core of
+  [OSCPoint](https://github.com/phuvf/oscpoint)'s OSC address space (slide
+  navigation, black/white, Output open/close, system enable/disable), using
+  its same default ports (35551 in / 35550 out), so an existing Bitfocus
+  Companion "Zinc: OSCPoint" setup drives this app with no reconfiguration.
+  Since it's plain UDP rather than a Windows COM add-in, it works on every
+  platform this app ships for. An optional, off-by-default "watched folder"
+  feature lets OSC open a specific PDF by filename without a dialog —
+  useful for a button wall that loads a specific deck on cue
 
 ## Architecture
 
