@@ -74,7 +74,9 @@ about which to pick:
   feature lets OSC open a specific PDF by filename without a dialog —
   useful for a button wall that loads a specific deck on cue. Sections are
   mapped from the PDF's own top-level outline/bookmarks — `goto/section`
-  jumps straight to one
+  jumps straight to one. `/oscpoint/slideshow/laserpointer` mirrors the
+  presenter's mouse position over the "Now" preview onto the Output
+  window as a glowing dot, matching PowerPoint's own laser-pointer feature
 
 ## Architecture
 

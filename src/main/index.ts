@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, screen, shell } from 'electron'
 import { join } from 'path'
 import { readFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import type { OutputState } from '../shared/output'
+import type { OutputState, LaserPosition } from '../shared/output'
 import { oscControlServer } from './services/oscControlServer'
 import type { OscArg, OscConfig } from '../shared/osc'
 import { fileControl } from './services/fileControl'
@@ -198,6 +198,13 @@ app.whenReady().then(() => {
   ipcMain.handle('output:push-state', (_e, state: OutputState) => {
     latestOutputState = state
     outputWindow?.webContents.send('output:state', state)
+  })
+  // High-frequency (mousemove-driven) — deliberately not persisted like
+  // latestOutputState above, since replaying a stale position to a
+  // freshly-opened Output window has no value (the presenter's mouse has
+  // long since moved on).
+  ipcMain.handle('output:push-laser-position', (_e, position: LaserPosition | null) => {
+    outputWindow?.webContents.send('output:laser-position', position)
   })
 
   ipcMain.handle('osc:start', () => oscControlServer.start())

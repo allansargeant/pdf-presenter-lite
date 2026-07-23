@@ -3,12 +3,15 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { renderPageContain, getPageLinks } from '../pdf'
 import type { PageLink } from '../pdf'
 
+const LASER_POINTER_THROTTLE_MS = 33 // ~30fps — plenty smooth for a UDP/IPC-forwarded dot
+
 function SlideSlot({
   doc,
   pageNumber,
   label,
   onNavigate,
-  onAdvance
+  onAdvance,
+  onPointerPosition
 }: {
   doc: PDFDocumentProxy | null
   pageNumber: number | null
@@ -20,11 +23,32 @@ function SlideSlot({
   /** Only passed for "Next" — clicking anywhere on the preview advances to
    * it, since it's always exactly one page ahead of "Now". */
   onAdvance?: () => void
+  /** Only passed for "Now", and only while the laser pointer is enabled —
+   * mirrors the presenter's mouse position over this slide onto the Output
+   * window. Position is normalized (0-100) against the frame's own box,
+   * same convention as the link overlay above, so it lines up regardless
+   * of how large this preview currently renders. null on pointer leave. */
+  onPointerPosition?: (pos: { xPct: number; yPct: number } | null) => void
 }): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [aspectRatio, setAspectRatio] = useState<number | null>(null)
   const [links, setLinks] = useState<PageLink[]>([])
+  const lastPointerSendRef = useRef(0)
+
+  const handlePointerMove = onPointerPosition
+    ? (e: React.MouseEvent<HTMLDivElement>): void => {
+        const now = performance.now()
+        if (now - lastPointerSendRef.current < LASER_POINTER_THROTTLE_MS) return
+        lastPointerSendRef.current = now
+        const rect = e.currentTarget.getBoundingClientRect()
+        onPointerPosition({
+          xPct: ((e.clientX - rect.left) / rect.width) * 100,
+          yPct: ((e.clientY - rect.top) / rect.height) * 100
+        })
+      }
+    : undefined
+  const handlePointerLeave = onPointerPosition ? () => onPointerPosition(null) : undefined
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -72,6 +96,8 @@ function SlideSlot({
           <div
             className="slide-slot-frame"
             style={aspectRatio ? { aspectRatio: `${aspectRatio}` } : undefined}
+            onMouseMove={handlePointerMove}
+            onMouseLeave={handlePointerLeave}
           >
             <canvas ref={canvasRef} />
             {onNavigate &&
@@ -103,9 +129,19 @@ interface NowNextProps {
   currentPage: number
   totalPages: number
   onNavigate: (page: number) => void
+  /** Only meaningful while the laser pointer is enabled — see SlideSlot's
+   * onPointerPosition doc comment. Omitted (not just false) when the
+   * feature is off, so no mouse-tracking overhead exists at all. */
+  onPointerPosition?: (pos: { xPct: number; yPct: number } | null) => void
 }
 
-function NowNext({ doc, currentPage, totalPages, onNavigate }: NowNextProps): React.JSX.Element {
+function NowNext({
+  doc,
+  currentPage,
+  totalPages,
+  onNavigate,
+  onPointerPosition
+}: NowNextProps): React.JSX.Element {
   const nextPage = currentPage < totalPages ? currentPage + 1 : null
 
   return (
@@ -113,6 +149,7 @@ function NowNext({ doc, currentPage, totalPages, onNavigate }: NowNextProps): Re
       <SlideSlot
         doc={doc}
         pageNumber={doc ? currentPage : null}
+        onPointerPosition={onPointerPosition}
         label="Now"
         onNavigate={onNavigate}
       />

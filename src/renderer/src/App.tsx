@@ -26,6 +26,7 @@ function App(): React.JSX.Element {
   const [filesFolderRelative, setFilesFolderRelative] = useState<string | null>(null)
   const [filesFolderFullPath, setFilesFolderFullPath] = useState<string | null>(null)
   const [sections, setSections] = useState<OscSection[]>([])
+  const [laserPointerEnabled, setLaserPointerEnabled] = useState(false)
   const oscSnapshotRef = useRef<OscSnapshot>({
     currentPage: 1,
     totalPages: 0,
@@ -37,7 +38,8 @@ function App(): React.JSX.Element {
     filesEnabled: false,
     filesFolderRelative: null,
     filesFolderFullPath: null,
-    sections: []
+    sections: [],
+    laserPointerEnabled: false
   })
 
   const totalPagesRef = useRef(0)
@@ -53,8 +55,14 @@ function App(): React.JSX.Element {
   // currently looking at, whenever it's open.
   useEffect(() => {
     if (!outputOpen || !pdfData) return
-    window.api.output.pushState({ data: pdfData, currentPage, screenBlank, hideCursor })
-  }, [outputOpen, pdfData, currentPage, screenBlank, hideCursor])
+    window.api.output.pushState({
+      data: pdfData,
+      currentPage,
+      screenBlank,
+      hideCursor,
+      laserPointerEnabled
+    })
+  }, [outputOpen, pdfData, currentPage, screenBlank, hideCursor, laserPointerEnabled])
 
   useEffect(() => {
     window.api.osc.isRunning().then(setOscRunning)
@@ -84,7 +92,8 @@ function App(): React.JSX.Element {
       filesEnabled,
       filesFolderRelative,
       filesFolderFullPath,
-      sections
+      sections,
+      laserPointerEnabled
     }
     oscSnapshotRef.current = snapshot
     if (oscRunning && oscFeedbacksEnabled) {
@@ -102,6 +111,7 @@ function App(): React.JSX.Element {
     filesFolderRelative,
     filesFolderFullPath,
     sections,
+    laserPointerEnabled,
     oscRunning
   ])
 
@@ -124,6 +134,7 @@ function App(): React.JSX.Element {
         setScreenBlank: (next) => setScreenBlank(next),
         openOutput: () => window.api.output.open(),
         closeOutput: () => window.api.output.close(),
+        setLaserPointerEnabled,
         setActionsEnabled: setOscActionsEnabled,
         setFeedbacksEnabled: setOscFeedbacksEnabled,
         refreshFeedback: () => {
@@ -222,6 +233,9 @@ function App(): React.JSX.Element {
             currentPage={currentPage}
             totalPages={totalPages}
             onNavigate={setCurrentPage}
+            onPointerPosition={
+              laserPointerEnabled ? (pos) => window.api.output.pushLaserPosition(pos) : undefined
+            }
           />
           <Transport
             currentPage={currentPage}

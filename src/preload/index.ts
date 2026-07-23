@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import type { OutputState } from '../shared/output'
+import type { OutputState, LaserPosition } from '../shared/output'
 import type { OscArg, OscAction, OscConfig } from '../shared/osc'
 import type { FileControlConfig } from '../shared/files'
 
@@ -50,6 +50,16 @@ const api = {
       ipcRenderer.on('output:state', listener)
       return (): void => {
         ipcRenderer.removeListener('output:state', listener)
+      }
+    },
+    pushLaserPosition: (position: LaserPosition | null): Promise<void> =>
+      ipcRenderer.invoke('output:push-laser-position', position),
+    onLaserPosition: (callback: (position: LaserPosition | null) => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, position: LaserPosition | null): void =>
+        callback(position)
+      ipcRenderer.on('output:laser-position', listener)
+      return (): void => {
+        ipcRenderer.removeListener('output:laser-position', listener)
       }
     }
   },

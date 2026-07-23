@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import type { OutputState } from '../../shared/output'
+import type { OutputState, LaserPosition } from '../../shared/output'
 import { loadPdf, renderPageContain } from './pdf'
 
 function Output(): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
   const [state, setState] = useState<OutputState | null>(null)
+  const [laserPosition, setLaserPosition] = useState<LaserPosition | null>(null)
   const lastDataRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -27,6 +28,10 @@ function Output(): React.JSX.Element {
   }, [])
 
   useEffect(() => {
+    return window.api.output.onLaserPosition(setLaserPosition)
+  }, [])
+
+  useEffect(() => {
     const canvas = canvasRef.current
     if (!doc || !canvas || !state || state.screenBlank !== 'none') return
     renderPageContain(doc, state.currentPage, canvas, window.innerWidth, window.innerHeight).catch(
@@ -35,6 +40,7 @@ function Output(): React.JSX.Element {
   }, [doc, state])
 
   const blank = state?.screenBlank ?? 'none'
+  const showLaser = state?.laserPointerEnabled && blank === 'none' && laserPosition
 
   return (
     <div
@@ -48,7 +54,19 @@ function Output(): React.JSX.Element {
       }
     >
       {blank === 'none' &&
-        (doc && state ? <canvas ref={canvasRef} /> : <div className="output-empty">No signal</div>)}
+        (doc && state ? (
+          <div className="output-canvas-frame">
+            <canvas ref={canvasRef} />
+            {showLaser && (
+              <div
+                className="laser-dot"
+                style={{ left: `${laserPosition.xPct}%`, top: `${laserPosition.yPct}%` }}
+              />
+            )}
+          </div>
+        ) : (
+          <div className="output-empty">No signal</div>
+        ))}
     </div>
   )
 }
