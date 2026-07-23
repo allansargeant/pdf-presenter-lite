@@ -6,9 +6,9 @@ export interface OscMessage {
   args: OscArg[]
 }
 
-/** OSCPoint's "section" concept, mapped from a PDF's own outline/bookmarks
- * (see pdf.ts's getSections) — the closest analogue a PDF has, since PDFs
- * have no native section feature. */
+/** A named range of slides, mapped from a PDF's own outline/bookmarks (see
+ * pdf.ts's getSections) — the closest analogue a PDF has, since PDFs have
+ * no native section feature of their own. */
 export interface OscSection {
   name: string
   firstSlide: number
@@ -35,9 +35,8 @@ export interface OscSnapshot {
   laserPointerEnabled: boolean
   /** Whether the presenter has turned on timed auto-advance at all —
    * pause/resume only make sense (and only take effect) once this is
-   * true, matching real PowerPoint semantics: OSCPoint's pause/resume
-   * suspend an *already-configured* auto-advance timer, they don't turn
-   * the feature on from cold. */
+   * true: pause/resume suspend an *already-configured* auto-advance
+   * timer, they don't turn the feature on from cold. */
   autoAdvanceEnabled: boolean
   autoAdvancePaused: boolean
 }
@@ -53,16 +52,14 @@ export interface OscHandlers {
   /** Renders whatever's on screen right now to width x height (default
    * 1920x1080 if either is omitted) and sets it as the desktop wallpaper. */
   setWallpaper(width?: number, height?: number): void
-  /** No-op when autoAdvanceEnabled is false — checked by the dispatcher,
-   * matching OSCPoint's own "pause/resume an existing timer" semantics. */
+  /** No-op when autoAdvanceEnabled is false — checked by the dispatcher. */
   setAutoAdvancePaused(paused: boolean): void
   setActionsEnabled(enabled: boolean): void
   setFeedbacksEnabled(enabled: boolean): void
   /** Resend the full current feedback state right now — used both for the
-   * explicit /oscpoint/feedbacks/refresh action and the "also triggers a
-   * refresh" behavior /oscpoint/feedbacks/enable documents. Always sends,
-   * regardless of the feedbacksEnabled flag, since it's an explicit,
-   * deliberate request. */
+   * explicit feedbacks/refresh action and the "also triggers a refresh"
+   * behavior feedbacks/enable carries. Always sends, regardless of the
+   * feedbacksEnabled flag, since it's an explicit, deliberate request. */
   refreshFeedback(): void
   /** All three are no-ops when filesEnabled is false — checked by the
    * dispatcher before calling any of these, not by the handlers themselves. */
@@ -98,8 +95,8 @@ function argBool(value: boolean): OscArg {
   return value ? { type: 'true', value: true } : { type: 'false', value: false }
 }
 
-/** OSCPoint's own convention: string args can arrive as ASCII (`string`
- * type) or UTF-8 (`blob` type) — accept either. */
+/** String args can arrive as ASCII (`string` type) or UTF-8 (`blob` type) —
+ * accept either. */
 function argToString(arg: OscArg | undefined): string | undefined {
   if (!arg) return undefined
   if (arg.type === 'string' || arg.type === 'symbol' || arg.type === 'character') return arg.value
@@ -130,7 +127,7 @@ function slideshowStateValue(s: OscSnapshot): 'edit' | 'running' | 'paused' {
   return s.autoAdvanceEnabled && s.autoAdvancePaused ? 'paused' : 'running'
 }
 
-/** Builds the /oscpoint/v2/presentation + presentation/* feedback messages. */
+/** Builds the /pdfpresenter/presentation + presentation/* feedback messages. */
 export function presentationFeedback(s: OscSnapshot): OscMessage[] {
   const presentationJson = JSON.stringify({
     name: s.fileName ?? '',
@@ -142,11 +139,11 @@ export function presentationFeedback(s: OscSnapshot): OscMessage[] {
     sections: s.sections.length ? s.sections.map((sec, i) => ({ id: String(i), ...sec })) : null
   })
   return [
-    { address: '/oscpoint/v2/presentation', args: [argStr(presentationJson)] },
-    { address: '/oscpoint/presentation/name', args: [argStr(s.fileName ?? '')] },
-    { address: '/oscpoint/presentation/slides/count', args: [argInt(s.totalPages)] },
-    { address: '/oscpoint/presentation/slides/count/visible', args: [argInt(s.totalPages)] },
-    { address: '/oscpoint/slideshow/state', args: [argStr(slideshowStateValue(s))] }
+    { address: '/pdfpresenter/presentation', args: [argStr(presentationJson)] },
+    { address: '/pdfpresenter/presentation/name', args: [argStr(s.fileName ?? '')] },
+    { address: '/pdfpresenter/presentation/slides/count', args: [argInt(s.totalPages)] },
+    { address: '/pdfpresenter/presentation/slides/count/visible', args: [argInt(s.totalPages)] },
+    { address: '/pdfpresenter/slideshow/state', args: [argStr(slideshowStateValue(s))] }
   ]
 }
 
@@ -155,18 +152,17 @@ export function presentationFeedback(s: OscSnapshot): OscMessage[] {
 export function slideFeedback(s: OscSnapshot): OscMessage[] {
   if (s.totalPages === 0) return []
   return [
-    { address: '/oscpoint/slideshow/currentslide', args: [argInt(s.currentPage)] },
+    { address: '/pdfpresenter/slideshow/currentslide', args: [argInt(s.currentPage)] },
     {
-      address: '/oscpoint/slideshow/slidesremaining',
+      address: '/pdfpresenter/slideshow/slidesremaining',
       args: [argInt(Math.max(s.totalPages - s.currentPage, 0))]
     }
   ]
 }
 
 /** Builds the slideshow/section/* feedback messages — only sent when the
- * current page actually falls inside a known section, matching FEEDBACKS.md's
- * "valid only during a slide show" framing for the equivalent PowerPoint
- * feedbacks (no fabricated section-of-1 data when there are no sections). */
+ * current page actually falls inside a known section (no fabricated
+ * section-of-1 data when there are no sections). */
 export function sectionFeedback(s: OscSnapshot): OscMessage[] {
   const index = s.sections.findIndex(
     (sec) => s.currentPage >= sec.firstSlide && s.currentPage <= sec.lastSlide
@@ -174,22 +170,22 @@ export function sectionFeedback(s: OscSnapshot): OscMessage[] {
   if (index === -1) return []
   const section = s.sections[index]
   return [
-    { address: '/oscpoint/slideshow/section/index', args: [argInt(index + 1)] },
-    { address: '/oscpoint/slideshow/section/name', args: [argStr(section.name)] },
+    { address: '/pdfpresenter/slideshow/section/index', args: [argInt(index + 1)] },
+    { address: '/pdfpresenter/slideshow/section/name', args: [argStr(section.name)] },
     {
-      address: '/oscpoint/slideshow/section/slidesremaining',
+      address: '/pdfpresenter/slideshow/section/slidesremaining',
       args: [argInt(Math.max(section.lastSlide - s.currentPage, 0))]
     }
   ]
 }
 
-/** Builds the /oscpoint/v2/files/* feedback messages. */
+/** Builds the /pdfpresenter/files/* feedback messages. */
 export function filesFeedback(s: OscSnapshot): OscMessage[] {
   return [
-    { address: '/oscpoint/v2/files/enabled', args: [argBool(s.filesEnabled)] },
-    { address: '/oscpoint/v2/files/activefolder', args: [argStr(s.filesFolderRelative ?? '')] },
+    { address: '/pdfpresenter/files/enabled', args: [argBool(s.filesEnabled)] },
+    { address: '/pdfpresenter/files/activefolder', args: [argStr(s.filesFolderRelative ?? '')] },
     {
-      address: '/oscpoint/v2/files/activefolder/fullpath',
+      address: '/pdfpresenter/files/activefolder/fullpath',
       args: [argStr(s.filesFolderFullPath ?? '')]
     }
   ]
@@ -206,11 +202,10 @@ export function allFeedback(s: OscSnapshot): OscMessage[] {
 
 /**
  * Dispatches one inbound OSC message to the app. Addresses this app can't
- * fulfill (notes — pdf-presenter-lite has none by design; sections, media,
- * wallpaper, laser pointer, auto-advance — see the OSCPoint plan's phased
- * roadmap) fall through the switch's default case and are silently
- * ignored, exactly like OSCPoint itself ignores malformed/unknown
- * messages — not an error, just a no-op.
+ * fulfill (notes — pdf-presenter-lite has none by design; media, since
+ * pdf.js has no embedded-video playback model) simply aren't implemented —
+ * they fall through the switch's default case and are silently ignored,
+ * not treated as an error.
  */
 export function handleOscAction(
   action: OscAction,
@@ -219,43 +214,42 @@ export function handleOscAction(
 ): void {
   const { address, args } = action
 
-  // Per OSCPoint's own documented behavior: every message except this one
-  // is ignored while actions are disabled.
-  if (address === '/oscpoint/actions/enable') {
+  // Every message except this one is ignored while actions are disabled.
+  if (address === '/pdfpresenter/actions/enable') {
     handlers.setActionsEnabled(true)
     return
   }
   if (!snapshot.actionsEnabled) return
 
   switch (address) {
-    case '/oscpoint/actions/disable':
+    case '/pdfpresenter/actions/disable':
       handlers.setActionsEnabled(false)
       return
-    case '/oscpoint/feedbacks/enable':
+    case '/pdfpresenter/feedbacks/enable':
       handlers.setFeedbacksEnabled(true)
       handlers.refreshFeedback()
       return
-    case '/oscpoint/feedbacks/disable':
+    case '/pdfpresenter/feedbacks/disable':
       handlers.setFeedbacksEnabled(false)
       return
-    case '/oscpoint/feedbacks/refresh':
+    case '/pdfpresenter/feedbacks/refresh':
       handlers.refreshFeedback()
       return
-    case '/oscpoint/next':
+    case '/pdfpresenter/next':
       handlers.nextPage()
       return
-    case '/oscpoint/previous':
+    case '/pdfpresenter/previous':
       handlers.previousPage()
       return
-    case '/oscpoint/goto/slide/first':
+    case '/pdfpresenter/goto/slide/first':
       handlers.goToPage(1)
       return
-    case '/oscpoint/goto/slide/last':
+    case '/pdfpresenter/goto/slide/last':
       handlers.goToPage(snapshot.totalPages)
       return
-    case '/oscpoint/goto/section': {
-      // Case-sensitive, matching OSCPoint's own documented behavior; does
-      // nothing if the name isn't found rather than erroring.
+    case '/pdfpresenter/goto/section': {
+      // Case-sensitive; does nothing if the name isn't found rather than
+      // erroring.
       const name = argToString(args[0])
       if (name === undefined) return
       const section = snapshot.sections.find((sec) => sec.name === name)
@@ -263,58 +257,58 @@ export function handleOscAction(
       handlers.goToPage(section.firstSlide)
       return
     }
-    case '/oscpoint/goto/slide': {
+    case '/pdfpresenter/goto/slide': {
       const n = argToNumber(args[0])
       if (n === undefined) return
       handlers.goToPage(clampPage(n, snapshot.totalPages))
       return
     }
-    case '/oscpoint/slideshow/start': {
+    case '/pdfpresenter/slideshow/start': {
       handlers.openOutput()
       const n = argToNumber(args[0])
       handlers.goToPage(n !== undefined ? clampPage(n, snapshot.totalPages) : 1)
       return
     }
-    case '/oscpoint/slideshow/start/current':
+    case '/pdfpresenter/slideshow/start/current':
       handlers.openOutput()
       return
-    case '/oscpoint/slideshow/end':
+    case '/pdfpresenter/slideshow/end':
       handlers.closeOutput()
       return
-    case '/oscpoint/slideshow/black':
+    case '/pdfpresenter/slideshow/black':
       handlers.setScreenBlank(resolveBlankToggle(args[0], 'black', snapshot.screenBlank))
       return
-    case '/oscpoint/slideshow/white':
+    case '/pdfpresenter/slideshow/white':
       handlers.setScreenBlank(resolveBlankToggle(args[0], 'white', snapshot.screenBlank))
       return
-    case '/oscpoint/slideshow/laserpointer': {
+    case '/pdfpresenter/slideshow/laserpointer': {
       const on = argToBoolean(args[0])
       handlers.setLaserPointerEnabled(on === undefined ? !snapshot.laserPointerEnabled : on)
       return
     }
-    case '/oscpoint/slideshow/setwallpaper':
+    case '/pdfpresenter/slideshow/setwallpaper':
       handlers.setWallpaper(argToNumber(args[0]), argToNumber(args[1]))
       return
-    case '/oscpoint/slideshow/pause':
+    case '/pdfpresenter/slideshow/pause':
       if (!snapshot.autoAdvanceEnabled) return
       handlers.setAutoAdvancePaused(true)
       return
-    case '/oscpoint/slideshow/resume':
+    case '/pdfpresenter/slideshow/resume':
       if (!snapshot.autoAdvanceEnabled) return
       handlers.setAutoAdvancePaused(false)
       return
-    case '/oscpoint/files/setpath': {
+    case '/pdfpresenter/files/setpath': {
       if (!snapshot.filesEnabled) return
       const path = argToString(args[0])
       if (path === undefined) return
       handlers.setFilesPath(path)
       return
     }
-    case '/oscpoint/files/list':
+    case '/pdfpresenter/files/list':
       if (!snapshot.filesEnabled) return
       handlers.requestFilesList()
       return
-    case '/oscpoint/files/open': {
+    case '/pdfpresenter/files/open': {
       if (!snapshot.filesEnabled) return
       const filename = argToString(args[0])
       if (filename === undefined) return

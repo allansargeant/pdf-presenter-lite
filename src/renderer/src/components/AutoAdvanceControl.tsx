@@ -9,7 +9,7 @@ interface Props {
 
 /** Timed auto-advance — a genuinely new presenter feature (this app is
  * otherwise always presenter/OSC-driven), built specifically so
- * /oscpoint/slideshow/pause|resume have a real, existing timer to
+ * /pdfpresenter/slideshow/pause|resume have a real, existing timer to
  * suspend/resume rather than nothing to act on. */
 function AutoAdvanceControl({
   enabled,

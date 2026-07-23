@@ -178,12 +178,12 @@ export interface PdfSection {
 }
 
 /**
- * Maps a PDF's top-level outline (bookmarks/table of contents) onto
- * OSCPoint's "section" concept — the closest analogue a PDF has, since
- * PDFs have no native section feature of their own. Only the top level is
- * used (nested sub-bookmarks would make "which section is slide N in"
- * ambiguous); entries with an unresolvable destination are skipped rather
- * than failing the whole list.
+ * Maps a PDF's top-level outline (bookmarks/table of contents) onto named
+ * slide ranges ("sections") — the closest analogue a PDF has, since PDFs
+ * have no native section feature of their own. Only the top level is used
+ * (nested sub-bookmarks would make "which section is slide N in" ambiguous);
+ * entries with an unresolvable destination are skipped rather than failing
+ * the whole list.
  */
 export async function getSections(doc: PDFDocumentProxy): Promise<PdfSection[]> {
   const outline = await doc.getOutline()

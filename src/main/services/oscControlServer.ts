@@ -33,9 +33,9 @@ function configPath(): string {
 /**
  * Generic OSC transport — deliberately has no idea what a "slide" is. Every
  * inbound message (bundles are unwrapped to their individual messages) is
- * emitted as a raw 'action' event; the actual OSCPoint address semantics
- * live in the renderer (src/renderer/src/osc/oscpoint.ts), which is where
- * the real app state (current page, etc.) already lives.
+ * emitted as a raw 'action' event; the actual protocol semantics live in
+ * the renderer (src/renderer/src/osc/protocol.ts), which is where the real
+ * app state (current page, etc.) already lives.
  */
 class OscControlServerService extends EventEmitter {
   private socket: dgram.Socket | null = null

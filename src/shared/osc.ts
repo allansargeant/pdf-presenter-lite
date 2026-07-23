@@ -2,7 +2,7 @@ import type { OscArgOutputOrArray } from 'osc-min'
 
 /** A single OSC argument, in osc-min's parsed representation — reused
  * verbatim rather than inventing our own shape, since it already covers
- * every type OSCPoint's protocol uses (string/integer/float/blob/bool). */
+ * every type this protocol uses (string/integer/float/blob/bool). */
 export type OscArg = OscArgOutputOrArray
 
 export interface OscAction {
@@ -11,17 +11,12 @@ export interface OscAction {
 }
 
 export interface OscConfig {
-  /** Port this app listens on for incoming OSCPoint-style actions — matches
-   * OSCPoint's own "local port" terminology and default (35551), so an
-   * existing Companion "Zinc: OSCPoint" connection works against us with
-   * zero reconfiguration. */
+  /** Port this app listens on for incoming actions. */
   localPort: number
-  /** Where outbound feedback is sent — OSCPoint's default remote host/port
-   * (127.0.0.1:35550). */
+  /** Where outbound feedback is sent. */
   remoteHost: string
   remotePort: number
   /** Whether OSC was running last time the app closed — used to restore
-   * that state on the next launch, matching OSCPoint's own
-   * persists-between-sessions ribbon setting. */
+   * that state on the next launch. */
   autoStart: boolean
 }

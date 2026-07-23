@@ -8,8 +8,8 @@ import OutputControl from './components/OutputControl'
 import Transport from './components/Transport'
 import OscControl from './components/OscControl'
 import AutoAdvanceControl from './components/AutoAdvanceControl'
-import { handleOscAction, allFeedback } from './osc/oscpoint'
-import type { OscSnapshot, OscSection } from './osc/oscpoint'
+import { handleOscAction, allFeedback } from './osc/protocol'
+import type { OscSnapshot, OscSection } from './osc/protocol'
 
 function App(): React.JSX.Element {
   const [fileName, setFileName] = useState<string | null>(null)
@@ -189,7 +189,7 @@ function App(): React.JSX.Element {
         },
         requestFilesList: () => {
           window.api.files.list().then((files) => {
-            window.api.osc.send('/oscpoint/v2/files', [
+            window.api.osc.send('/pdfpresenter/files', [
               { type: 'string', value: JSON.stringify(files) }
             ])
           })

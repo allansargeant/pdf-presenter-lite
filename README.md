@@ -64,25 +64,25 @@ about which to pick:
 - **Hide cursor on Output** — an optional checkbox that hides the OS mouse
   cursor whenever it's over the Output window, for a clean audience-facing
   display
-- **OSC control** — implements the core of
-  [OSCPoint](https://github.com/phuvf/oscpoint)'s OSC address space (slide
-  navigation, black/white, Output open/close, system enable/disable), using
-  its same default ports (35551 in / 35550 out), so an existing Bitfocus
-  Companion "Zinc: OSCPoint" setup drives this app with no reconfiguration.
-  Since it's plain UDP rather than a Windows COM add-in, it works on every
-  platform this app ships for. An optional, off-by-default "watched folder"
-  feature lets OSC open a specific PDF by filename without a dialog —
-  useful for a button wall that loads a specific deck on cue. Sections are
-  mapped from the PDF's own top-level outline/bookmarks — `goto/section`
-  jumps straight to one. `/oscpoint/slideshow/laserpointer` mirrors the
-  presenter's mouse position over the "Now" preview onto the Output
-  window as a glowing dot, matching PowerPoint's own laser-pointer feature.
-  `/oscpoint/slideshow/setwallpaper` renders the current slide and sets it
-  as the desktop wallpaper on every connected monitor — macOS and Windows
-  are fully covered, Linux is GNOME-only
+- **OSC control** — a UDP OSC address space (slide navigation, black/white,
+  Output open/close, system enable/disable) at `/pdfpresenter/...`, plain
+  UDP rather than a Windows COM add-in, so it works on every platform this
+  app ships for. A real Bitfocus Companion module ships alongside this app
+  — [companion-module-pdf-presenter-lite](https://github.com/allansargeant/companion-module-pdf-presenter-lite)
+  — for driving it from a Stream Deck or any other Companion surface. An
+  optional, off-by-default "watched folder" feature lets OSC open a
+  specific PDF by filename without a dialog — useful for a button wall
+  that loads a specific deck on cue. Sections are mapped from the PDF's
+  own top-level outline/bookmarks — `goto/section` jumps straight to one.
+  `/pdfpresenter/slideshow/laserpointer` mirrors the presenter's mouse
+  position over the "Now" preview onto the Output window as a glowing dot,
+  matching PowerPoint's own laser-pointer feature.
+  `/pdfpresenter/slideshow/setwallpaper` renders the current slide and
+  sets it as the desktop wallpaper on every connected monitor — macOS and
+  Windows are fully covered, Linux is GNOME-only
 - **Timed auto-advance** — an optional "advance every N seconds" mode
   (stops at the last slide rather than looping), with its own play/pause
-  control next to the OSC settings — `/oscpoint/slideshow/pause` and
+  control next to the OSC settings — `/pdfpresenter/slideshow/pause` and
   `/resume` suspend/resume it remotely once it's turned on
 
 ## Architecture
