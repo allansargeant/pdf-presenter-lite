@@ -72,7 +72,9 @@ about which to pick:
   Since it's plain UDP rather than a Windows COM add-in, it works on every
   platform this app ships for. An optional, off-by-default "watched folder"
   feature lets OSC open a specific PDF by filename without a dialog —
-  useful for a button wall that loads a specific deck on cue
+  useful for a button wall that loads a specific deck on cue. Sections are
+  mapped from the PDF's own top-level outline/bookmarks — `goto/section`
+  jumps straight to one
 
 ## Architecture
 

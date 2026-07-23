@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { loadPdf } from './pdf'
+import { loadPdf, getSections } from './pdf'
 import type { ScreenBlank } from '../../shared/output'
 import NowNext from './components/NowNext'
 import Thumbnail from './components/Thumbnail'
@@ -8,7 +8,7 @@ import OutputControl from './components/OutputControl'
 import Transport from './components/Transport'
 import OscControl from './components/OscControl'
 import { handleOscAction, allFeedback } from './osc/oscpoint'
-import type { OscSnapshot } from './osc/oscpoint'
+import type { OscSnapshot, OscSection } from './osc/oscpoint'
 
 function App(): React.JSX.Element {
   const [fileName, setFileName] = useState<string | null>(null)
@@ -25,6 +25,7 @@ function App(): React.JSX.Element {
   const [filesEnabled, setFilesEnabled] = useState(false)
   const [filesFolderRelative, setFilesFolderRelative] = useState<string | null>(null)
   const [filesFolderFullPath, setFilesFolderFullPath] = useState<string | null>(null)
+  const [sections, setSections] = useState<OscSection[]>([])
   const oscSnapshotRef = useRef<OscSnapshot>({
     currentPage: 1,
     totalPages: 0,
@@ -35,7 +36,8 @@ function App(): React.JSX.Element {
     feedbacksEnabled: true,
     filesEnabled: false,
     filesFolderRelative: null,
-    filesFolderFullPath: null
+    filesFolderFullPath: null,
+    sections: []
   })
 
   const totalPagesRef = useRef(0)
@@ -81,7 +83,8 @@ function App(): React.JSX.Element {
       feedbacksEnabled: oscFeedbacksEnabled,
       filesEnabled,
       filesFolderRelative,
-      filesFolderFullPath
+      filesFolderFullPath,
+      sections
     }
     oscSnapshotRef.current = snapshot
     if (oscRunning && oscFeedbacksEnabled) {
@@ -98,6 +101,7 @@ function App(): React.JSX.Element {
     filesEnabled,
     filesFolderRelative,
     filesFolderFullPath,
+    sections,
     oscRunning
   ])
 
@@ -108,6 +112,7 @@ function App(): React.JSX.Element {
     setDoc(loaded)
     setTotalPages(loaded.numPages)
     setCurrentPage(1)
+    setSections(await getSections(loaded))
   }
 
   useEffect(() => {

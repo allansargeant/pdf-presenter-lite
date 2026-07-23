@@ -6,6 +6,16 @@ export interface OscMessage {
   args: OscArg[]
 }
 
+/** OSCPoint's "section" concept, mapped from a PDF's own outline/bookmarks
+ * (see pdf.ts's getSections) — the closest analogue a PDF has, since PDFs
+ * have no native section feature. */
+export interface OscSection {
+  name: string
+  firstSlide: number
+  lastSlide: number
+  slideCount: number
+}
+
 /** Everything the dispatcher/feedback-builders need to know about current
  * app state — a plain snapshot, not a live subscription, so callers can
  * read it from a ref without worrying about stale closures. pdf-presenter-lite
@@ -21,6 +31,7 @@ export interface OscSnapshot {
   filesEnabled: boolean
   filesFolderRelative: string | null
   filesFolderFullPath: string | null
+  sections: OscSection[]
 }
 
 export interface OscHandlers {
@@ -108,7 +119,7 @@ export function presentationFeedback(s: OscSnapshot): OscMessage[] {
     saved: true,
     active: s.totalPages > 0,
     slideshow: s.outputOpen,
-    sections: null
+    sections: s.sections.length ? s.sections.map((sec, i) => ({ id: String(i), ...sec })) : null
   })
   return [
     { address: '/oscpoint/v2/presentation', args: [argStr(presentationJson)] },
@@ -132,6 +143,26 @@ export function slideFeedback(s: OscSnapshot): OscMessage[] {
   ]
 }
 
+/** Builds the slideshow/section/* feedback messages — only sent when the
+ * current page actually falls inside a known section, matching FEEDBACKS.md's
+ * "valid only during a slide show" framing for the equivalent PowerPoint
+ * feedbacks (no fabricated section-of-1 data when there are no sections). */
+export function sectionFeedback(s: OscSnapshot): OscMessage[] {
+  const index = s.sections.findIndex(
+    (sec) => s.currentPage >= sec.firstSlide && s.currentPage <= sec.lastSlide
+  )
+  if (index === -1) return []
+  const section = s.sections[index]
+  return [
+    { address: '/oscpoint/slideshow/section/index', args: [argInt(index + 1)] },
+    { address: '/oscpoint/slideshow/section/name', args: [argStr(section.name)] },
+    {
+      address: '/oscpoint/slideshow/section/slidesremaining',
+      args: [argInt(Math.max(section.lastSlide - s.currentPage, 0))]
+    }
+  ]
+}
+
 /** Builds the /oscpoint/v2/files/* feedback messages. */
 export function filesFeedback(s: OscSnapshot): OscMessage[] {
   return [
@@ -145,7 +176,12 @@ export function filesFeedback(s: OscSnapshot): OscMessage[] {
 }
 
 export function allFeedback(s: OscSnapshot): OscMessage[] {
-  return [...presentationFeedback(s), ...slideFeedback(s), ...filesFeedback(s)]
+  return [
+    ...presentationFeedback(s),
+    ...slideFeedback(s),
+    ...sectionFeedback(s),
+    ...filesFeedback(s)
+  ]
 }
 
 /**
@@ -197,6 +233,16 @@ export function handleOscAction(
     case '/oscpoint/goto/slide/last':
       handlers.goToPage(snapshot.totalPages)
       return
+    case '/oscpoint/goto/section': {
+      // Case-sensitive, matching OSCPoint's own documented behavior; does
+      // nothing if the name isn't found rather than erroring.
+      const name = argToString(args[0])
+      if (name === undefined) return
+      const section = snapshot.sections.find((sec) => sec.name === name)
+      if (!section) return
+      handlers.goToPage(section.firstSlide)
+      return
+    }
     case '/oscpoint/goto/slide': {
       const n = argToNumber(args[0])
       if (n === undefined) return
