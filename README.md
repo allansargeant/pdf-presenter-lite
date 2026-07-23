@@ -80,6 +80,10 @@ about which to pick:
   `/oscpoint/slideshow/setwallpaper` renders the current slide and sets it
   as the desktop wallpaper on every connected monitor — macOS and Windows
   are fully covered, Linux is GNOME-only
+- **Timed auto-advance** — an optional "advance every N seconds" mode
+  (stops at the last slide rather than looping), with its own play/pause
+  control next to the OSC settings — `/oscpoint/slideshow/pause` and
+  `/resume` suspend/resume it remotely once it's turned on
 
 ## Architecture
 

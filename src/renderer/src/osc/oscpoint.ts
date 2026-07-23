@@ -33,6 +33,13 @@ export interface OscSnapshot {
   filesFolderFullPath: string | null
   sections: OscSection[]
   laserPointerEnabled: boolean
+  /** Whether the presenter has turned on timed auto-advance at all —
+   * pause/resume only make sense (and only take effect) once this is
+   * true, matching real PowerPoint semantics: OSCPoint's pause/resume
+   * suspend an *already-configured* auto-advance timer, they don't turn
+   * the feature on from cold. */
+  autoAdvanceEnabled: boolean
+  autoAdvancePaused: boolean
 }
 
 export interface OscHandlers {
@@ -46,6 +53,9 @@ export interface OscHandlers {
   /** Renders whatever's on screen right now to width x height (default
    * 1920x1080 if either is omitted) and sets it as the desktop wallpaper. */
   setWallpaper(width?: number, height?: number): void
+  /** No-op when autoAdvanceEnabled is false — checked by the dispatcher,
+   * matching OSCPoint's own "pause/resume an existing timer" semantics. */
+  setAutoAdvancePaused(paused: boolean): void
   setActionsEnabled(enabled: boolean): void
   setFeedbacksEnabled(enabled: boolean): void
   /** Resend the full current feedback state right now — used both for the
@@ -115,6 +125,11 @@ function resolveBlankToggle(
   return on ? color : 'none'
 }
 
+function slideshowStateValue(s: OscSnapshot): 'edit' | 'running' | 'paused' {
+  if (!s.outputOpen) return 'edit'
+  return s.autoAdvanceEnabled && s.autoAdvancePaused ? 'paused' : 'running'
+}
+
 /** Builds the /oscpoint/v2/presentation + presentation/* feedback messages. */
 export function presentationFeedback(s: OscSnapshot): OscMessage[] {
   const presentationJson = JSON.stringify({
@@ -131,7 +146,7 @@ export function presentationFeedback(s: OscSnapshot): OscMessage[] {
     { address: '/oscpoint/presentation/name', args: [argStr(s.fileName ?? '')] },
     { address: '/oscpoint/presentation/slides/count', args: [argInt(s.totalPages)] },
     { address: '/oscpoint/presentation/slides/count/visible', args: [argInt(s.totalPages)] },
-    { address: '/oscpoint/slideshow/state', args: [argStr(s.outputOpen ? 'running' : 'edit')] }
+    { address: '/oscpoint/slideshow/state', args: [argStr(slideshowStateValue(s))] }
   ]
 }
 
@@ -279,6 +294,14 @@ export function handleOscAction(
     }
     case '/oscpoint/slideshow/setwallpaper':
       handlers.setWallpaper(argToNumber(args[0]), argToNumber(args[1]))
+      return
+    case '/oscpoint/slideshow/pause':
+      if (!snapshot.autoAdvanceEnabled) return
+      handlers.setAutoAdvancePaused(true)
+      return
+    case '/oscpoint/slideshow/resume':
+      if (!snapshot.autoAdvanceEnabled) return
+      handlers.setAutoAdvancePaused(false)
       return
     case '/oscpoint/files/setpath': {
       if (!snapshot.filesEnabled) return

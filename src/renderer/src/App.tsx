@@ -7,6 +7,7 @@ import Thumbnail from './components/Thumbnail'
 import OutputControl from './components/OutputControl'
 import Transport from './components/Transport'
 import OscControl from './components/OscControl'
+import AutoAdvanceControl from './components/AutoAdvanceControl'
 import { handleOscAction, allFeedback } from './osc/oscpoint'
 import type { OscSnapshot, OscSection } from './osc/oscpoint'
 
@@ -27,6 +28,9 @@ function App(): React.JSX.Element {
   const [filesFolderFullPath, setFilesFolderFullPath] = useState<string | null>(null)
   const [sections, setSections] = useState<OscSection[]>([])
   const [laserPointerEnabled, setLaserPointerEnabled] = useState(false)
+  const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(false)
+  const [autoAdvanceIntervalSec, setAutoAdvanceIntervalSec] = useState(5)
+  const [autoAdvancePaused, setAutoAdvancePaused] = useState(false)
   const oscSnapshotRef = useRef<OscSnapshot>({
     currentPage: 1,
     totalPages: 0,
@@ -39,7 +43,9 @@ function App(): React.JSX.Element {
     filesFolderRelative: null,
     filesFolderFullPath: null,
     sections: [],
-    laserPointerEnabled: false
+    laserPointerEnabled: false,
+    autoAdvanceEnabled: false,
+    autoAdvancePaused: false
   })
 
   const totalPagesRef = useRef(0)
@@ -85,6 +91,17 @@ function App(): React.JSX.Element {
     })
   }, [])
 
+  // Timed auto-advance — stops at the last page rather than looping back
+  // to the first, matching a presenter's expectation of what "the end of
+  // the deck" means.
+  useEffect(() => {
+    if (!autoAdvanceEnabled || autoAdvancePaused || totalPages === 0) return
+    const timer = setInterval(() => {
+      setCurrentPage((p) => Math.min(p + 1, totalPagesRef.current || p))
+    }, autoAdvanceIntervalSec * 1000)
+    return () => clearInterval(timer)
+  }, [autoAdvanceEnabled, autoAdvancePaused, autoAdvanceIntervalSec, totalPages])
+
   // Keeps a ref-mirrored snapshot of everything the OSC action dispatcher
   // and feedback builders need, and reactively resends feedback whenever
   // any of it changes.
@@ -101,7 +118,9 @@ function App(): React.JSX.Element {
       filesFolderRelative,
       filesFolderFullPath,
       sections,
-      laserPointerEnabled
+      laserPointerEnabled,
+      autoAdvanceEnabled,
+      autoAdvancePaused
     }
     oscSnapshotRef.current = snapshot
     if (oscRunning && oscFeedbacksEnabled) {
@@ -120,6 +139,8 @@ function App(): React.JSX.Element {
     filesFolderFullPath,
     sections,
     laserPointerEnabled,
+    autoAdvanceEnabled,
+    autoAdvancePaused,
     oscRunning
   ])
 
@@ -154,6 +175,7 @@ function App(): React.JSX.Element {
             })
             .catch((err) => console.error('Failed to render wallpaper frame', err))
         },
+        setAutoAdvancePaused,
         setActionsEnabled: setOscActionsEnabled,
         setFeedbacksEnabled: setOscFeedbacksEnabled,
         refreshFeedback: () => {
@@ -224,6 +246,14 @@ function App(): React.JSX.Element {
             disabled={!doc}
             hideCursor={hideCursor}
             onHideCursorChange={setHideCursor}
+          />
+          <AutoAdvanceControl
+            enabled={autoAdvanceEnabled}
+            intervalSec={autoAdvanceIntervalSec}
+            paused={autoAdvancePaused}
+            onEnabledChange={setAutoAdvanceEnabled}
+            onIntervalChange={setAutoAdvanceIntervalSec}
+            onPausedChange={setAutoAdvancePaused}
           />
           <OscControl
             filesEnabled={filesEnabled}
