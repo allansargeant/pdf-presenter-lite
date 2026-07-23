@@ -110,6 +110,34 @@ arrow-key navigation, and the fullscreen Output window (including a real race
 condition in the initial state hand-off, found and fixed during testing) all
 confirmed working against a real multi-page PDF.
 
+## Inspiration & prior art
+
+This app's OSC control feature (and, indirectly, its wallpaper-export
+feature) was shaped by looking at how existing remote-PowerPoint-control
+tools work. None of their code is reused here — this app has no PowerPoint
+dependency at all, and two of the three are closed-source anyway — but it's
+worth being upfront about where the ideas came from:
+
+- **[OSCPoint](https://github.com/phuvf/oscpoint)** — a Windows PowerPoint
+  add-in exposing an OSC API. It's closed-source, so nothing was copied from
+  it; its public documentation (`ACTIONS.md`/`FEEDBACKS.md`/`EVENTS.md`) was
+  read to design a comparable address space and the two-port
+  (action-in/feedback-out) architecture this app uses. That address space
+  originally mirrored OSCPoint's own (`/oscpoint/...`, matching ports) for
+  drop-in Companion compatibility; it's since been renamed to
+  `/pdfpresenter/...` and decoupled from OSCPoint entirely, now that this app
+  has its own dedicated Companion module instead.
+- **[Iris Down Remote Show Control](https://irisdown.co.uk/rsc.html)** — an
+  older, separate commercial PowerPoint add-in taking plain ASCII text
+  commands (`NEXT`, `PREV`, `GO`, `RUNCURRENT`, `SETBG`, …) over UDP/TCP,
+  with no feedback channel at all. Its command set overlaps conceptually
+  with several features here — slide navigation, starting from the current
+  slide, and notably `SETBG`'s "set desktop wallpaper to the current slide,"
+  which this app's own wallpaper-export feature does the same thing as.
+  Nothing was read from its source (it isn't public) or its wire format
+  (plain text vs. this app's OSC) — the overlap is in feature scope, not
+  implementation.
+
 ## Project Setup
 
 ### Install
