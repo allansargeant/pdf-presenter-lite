@@ -76,7 +76,10 @@ about which to pick:
   mapped from the PDF's own top-level outline/bookmarks — `goto/section`
   jumps straight to one. `/oscpoint/slideshow/laserpointer` mirrors the
   presenter's mouse position over the "Now" preview onto the Output
-  window as a glowing dot, matching PowerPoint's own laser-pointer feature
+  window as a glowing dot, matching PowerPoint's own laser-pointer feature.
+  `/oscpoint/slideshow/setwallpaper` renders the current slide and sets it
+  as the desktop wallpaper on every connected monitor — macOS and Windows
+  are fully covered, Linux is GNOME-only
 
 ## Architecture
 

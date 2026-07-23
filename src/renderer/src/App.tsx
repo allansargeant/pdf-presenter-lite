@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { loadPdf, getSections } from './pdf'
+import { loadPdf, getSections, renderPageContain } from './pdf'
 import type { ScreenBlank } from '../../shared/output'
 import NowNext from './components/NowNext'
 import Thumbnail from './components/Thumbnail'
@@ -46,6 +46,14 @@ function App(): React.JSX.Element {
   useEffect(() => {
     totalPagesRef.current = totalPages
   }, [totalPages])
+
+  // Read by the onAction effect below (subscribed once, [] deps) so a
+  // wallpaper request always renders the actually-current page rather than
+  // whatever was current on the very first render.
+  const docPageRef = useRef({ doc, currentPage })
+  useEffect(() => {
+    docPageRef.current = { doc, currentPage }
+  })
 
   useEffect(() => {
     return window.api.output.onOpenChanged(setOutputOpen)
@@ -135,6 +143,17 @@ function App(): React.JSX.Element {
         openOutput: () => window.api.output.open(),
         closeOutput: () => window.api.output.close(),
         setLaserPointerEnabled,
+        setWallpaper: (width, height) => {
+          const { doc, currentPage } = docPageRef.current
+          if (!doc) return
+          const canvas = document.createElement('canvas')
+          renderPageContain(doc, currentPage, canvas, width ?? 1920, height ?? 1080)
+            .then(() => {
+              const dataUrl = canvas.toDataURL('image/png')
+              window.api.wallpaper.set(dataUrl.split(',')[1])
+            })
+            .catch((err) => console.error('Failed to render wallpaper frame', err))
+        },
         setActionsEnabled: setOscActionsEnabled,
         setFeedbacksEnabled: setOscFeedbacksEnabled,
         refreshFeedback: () => {

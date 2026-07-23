@@ -97,6 +97,9 @@ const api = {
     list: (): Promise<string[]> => ipcRenderer.invoke('files:list'),
     open: (filename: string): Promise<OpenPdfResult | null> =>
       ipcRenderer.invoke('files:open', filename)
+  },
+  wallpaper: {
+    set: (base64Png: string): Promise<void> => ipcRenderer.invoke('wallpaper:set', base64Png)
   }
 }
 

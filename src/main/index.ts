@@ -6,6 +6,7 @@ import type { OutputState, LaserPosition } from '../shared/output'
 import { oscControlServer } from './services/oscControlServer'
 import type { OscArg, OscConfig } from '../shared/osc'
 import { fileControl } from './services/fileControl'
+import { setWallpaper } from './services/wallpaper'
 
 interface DisplayInfo {
   id: number
@@ -216,6 +217,10 @@ app.whenReady().then(() => {
   )
   ipcMain.handle('osc:send', (_e, address: string, args: OscArg[]) =>
     oscControlServer.send(address, args)
+  )
+
+  ipcMain.handle('wallpaper:set', (_e, base64Png: string) =>
+    setWallpaper(Buffer.from(base64Png, 'base64'))
   )
 
   app.on('activate', () => {
